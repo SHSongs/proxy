@@ -35,6 +35,7 @@ class TheServer:
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.bind((host, port))
         self.server.listen(200)
+        self.clientsock = None
 
     def main_loop(self):
         self.input_list.append(self.server)
@@ -46,15 +47,17 @@ class TheServer:
                     self.on_accept(s)
                     break
 
-                self.data = s.recv(buffer_size)
-                if len(self.data) == 0:
-                    self.on_close(s)
-                    break
-                else:
-                    self.on_recv(s)
+                if s != self.clientsock:
+                    self.data = s.recv(buffer_size)
+                    if len(self.data) == 0:
+                        self.on_close(s)
+                        break
+                    else:
+                        self.on_recv(s)
 
     def on_accept(self, s):
         clientsock, clientaddr = self.server.accept()
+        self.clientsock = clientsock
 
         self.data = clientsock.recv(buffer_size)
         if len(self.data) == 0:
@@ -87,7 +90,7 @@ class TheServer:
         request_data = ' '.join(request_data)
         self.data = bytes(request_data, encoding="utf-8")
         print(self.data)
-        
+
         if forward:
             print("{0} has connected".format(clientaddr))
             self.input_list.append(clientsock)
