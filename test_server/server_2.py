@@ -6,6 +6,11 @@ app = FastAPI()
 
 @app.get("/")
 def root():
+    return "GAME SERVER root router"
+
+
+@app.get("/map")
+def port():
     return {
         "mapName": "jsonTestMap",
         "mapCode": "ABCDEFG",
