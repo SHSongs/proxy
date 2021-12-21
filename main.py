@@ -1,21 +1,15 @@
-# https://gist.github.com/voorloopnul/415cb75a3e4f766dc590#file-proxy-py
-
-# !/usr/bin/python
+#!/usr/bin/python
 # This is a simple port-forward / proxy, written using only the default python
 # library. If you want to make a suggestion or fix something you can contact-me
 # at voorloop_at_gmail.com
-# Distributed over IDC(I Don't Care) license
+# Distributed over MIT license
 import socket
-import select  # I/O 멀티 플렉싱을 위해 사용
+import select
 import time
 import sys
 
-# Changing the buffer_size and delay, you can improve the speed and bandwidth.
-# But when buffer get to high or delay go too down, you can broke things
 buffer_size = 4096
-delay = 0.0001
-forward_to_dict = {8000: ('127.0.0.1', 8000), 10000: ('127.0.0.1', 10000)}
-
+forward_to = ('www.voorloopnul.com', 80)
 
 class Forward:
     def __init__(self):
@@ -25,10 +19,9 @@ class Forward:
         try:
             self.forward.connect((host, port))
             return self.forward
-        except Exception as e:
-            print(e)
+        except Exception as inst:
+            print("[exception] - {0}".format(inst.strerror))
             return False
-
 
 class TheServer:
     input_list = []
@@ -43,82 +36,57 @@ class TheServer:
     def main_loop(self):
         self.input_list.append(self.server)
         while 1:
-            time.sleep(delay)
             ss = select.select
             inputready, outputready, exceptready = ss(self.input_list, [], [])
-            for self.s in inputready:
-                if self.s == self.server:
-                    self.on_accept()
+            for s in inputready:
+                if s == self.server:
+                    self.on_accept(s)
                     break
 
-                data = self.s.recv(buffer_size)
-                if len(data) == 0:
-                    self.on_close()
+                self.data = s.recv(buffer_size)
+                if len(self.data) == 0:
+                    self.on_close(s)
                     break
                 else:
-                    self.on_recv(data)
+                    self.on_recv(s)
 
-    def on_accept(self):
-        clientsock, clientaddr = self.server.accept()
-
-        data = clientsock.recv(buffer_size)
-        request_data = data.decode().split()
-        request_method = request_data[0]
-
-        if request_method == "GET":
-            pass
-        else:
-            print("요청방법이 올바르지 않습니다")
-            return
-
-        key = int(request_data[1][1:])
-        forward_to = forward_to_dict[key]
-        print("forward_to: ", forward_to)
+    def on_accept(self, s):
         forward = Forward().start(forward_to[0], forward_to[1])
-        print(forward)
-
+        clientsock, clientaddr = self.server.accept()
         if forward:
-            print(clientaddr, "has connected")
+            print("{0} has connected".format(clientaddr))
             self.input_list.append(clientsock)
             self.input_list.append(forward)
             self.channel[clientsock] = forward
             self.channel[forward] = clientsock
-
-            if len(data) == 0:
-                print("close")
-            else:
-                self.on_recv(data)
-
-
         else:
-            print("Can't establish connection with remote server.", end=' ')
-            print("Closing connection with client side", clientaddr)
+            print("Can't establish a connection with remote server. Closing connection with client side {0}".format(clientaddr))
             clientsock.close()
 
-    def on_close(self):
-        print(self.s.getpeername(), "has disconnected")
-        # remove objects from input_list
-        self.input_list.remove(self.s)
-        self.input_list.remove(self.channel[self.s])
-        out = self.channel[self.s]
+    def on_close(self, s):
+        print("{0} has disconnected".format(s.getpeername()))
+        #remove objects from input_list
+        self.input_list.remove(s)
+        self.input_list.remove(self.channel[s])
+        out = self.channel[s]
         # close the connection with client
-        self.channel[out].close()  # equivalent to do self.s.close()
+        self.channel[out].close()
         # close the connection with remote server
-        self.channel[self.s].close()
+        self.channel[s].close()
         # delete both objects from channel dict
         del self.channel[out]
-        del self.channel[self.s]
+        del self.channel[s]
 
-    def on_recv(self, data):
+    def on_recv(self, s):
+        data = self.data
         # here we can parse and/or modify the data before send forward
-        print(data.decode('utf-8').split(' '))
-        self.channel[self.s].send(data)
-
+        print(data)
+        self.channel[s].send(data)
 
 if __name__ == '__main__':
-    server = TheServer('', 9090)
-    try:
-        server.main_loop()
-    except KeyboardInterrupt:
-        print("Ctrl C - Stopping server")
-        sys.exit(1)
+        server = TheServer('', 9090)
+        try:
+            server.main_loop()
+        except KeyboardInterrupt:
+            print("Ctrl C - Stopping server")
+            sys.exit(1)
