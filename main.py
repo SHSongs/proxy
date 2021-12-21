@@ -61,20 +61,33 @@ class TheServer:
             self.on_close(s)
             return
         else:
-            request_data = self.data.decode().split()
-            request_method = request_data[0]
+            request_data = self.data.decode('utf-8')
+            request_data = request_data.split(' ')
 
+            request_method = request_data[0]
             if request_method == "GET":
                 pass
             else:
                 print("요청방법이 올바르지 않습니다")
                 return
-        key = int(request_data[1][1:])
+
+        try:
+            key = int(request_data[1].split('/')[1])
+        except:
+            print("잘못된 요청")
+            return
+
         forward_to = forward_to_dict[key]
         print("forward_to: ", forward_to)
 
         forward = Forward().start(forward_to[0], forward_to[1])
 
+        tmp = request_data[1].split('/')[2:]
+        request_data[1] = '/' + '/'.join(tmp)
+        request_data = ' '.join(request_data)
+        self.data = bytes(request_data, encoding="utf-8")
+        print(self.data)
+        
         if forward:
             print("{0} has connected".format(clientaddr))
             self.input_list.append(clientsock)
