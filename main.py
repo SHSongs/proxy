@@ -10,6 +10,8 @@ import sys
 
 buffer_size = 4096
 forward_to = ('127.0.0.1', 10000)
+forward_to_dict = {8000: ('127.0.0.1', 8000), 10000: ('127.0.0.1', 10000)}
+
 
 class Forward:
     def __init__(self):
@@ -22,6 +24,7 @@ class Forward:
         except Exception as inst:
             print("[exception] - {0}".format(inst.strerror))
             return False
+
 
 class TheServer:
     input_list = []
@@ -51,21 +54,42 @@ class TheServer:
                     self.on_recv(s)
 
     def on_accept(self, s):
-        forward = Forward().start(forward_to[0], forward_to[1])
         clientsock, clientaddr = self.server.accept()
+
+        self.data = clientsock.recv(buffer_size)
+        if len(self.data) == 0:
+            self.on_close(s)
+            return
+        else:
+            request_data = self.data.decode().split()
+            request_method = request_data[0]
+
+            if request_method == "GET":
+                pass
+            else:
+                print("요청방법이 올바르지 않습니다")
+                return
+        key = int(request_data[1][1:])
+        forward_to = forward_to_dict[key]
+        print("forward_to: ", forward_to)
+
+        forward = Forward().start(forward_to[0], forward_to[1])
+
         if forward:
             print("{0} has connected".format(clientaddr))
             self.input_list.append(clientsock)
             self.input_list.append(forward)
             self.channel[clientsock] = forward
             self.channel[forward] = clientsock
+            self.on_recv(clientsock)
         else:
-            print("Can't establish a connection with remote server. Closing connection with client side {0}".format(clientaddr))
+            print("Can't establish a connection with remote server. Closing connection with client side {0}".format(
+                clientaddr))
             clientsock.close()
 
     def on_close(self, s):
         print("{0} has disconnected".format(s.getpeername()))
-        #remove objects from input_list
+        # remove objects from input_list
         self.input_list.remove(s)
         self.input_list.remove(self.channel[s])
         out = self.channel[s]
@@ -81,12 +105,14 @@ class TheServer:
         data = self.data
         # here we can parse and/or modify the data before send forward
         print(data)
+
         self.channel[s].send(data)
 
+
 if __name__ == '__main__':
-        server = TheServer('', 9090)
-        try:
-            server.main_loop()
-        except KeyboardInterrupt:
-            print("Ctrl C - Stopping server")
-            sys.exit(1)
+    server = TheServer('', 9090)
+    try:
+        server.main_loop()
+    except KeyboardInterrupt:
+        print("Ctrl C - Stopping server")
+        sys.exit(1)
