@@ -9,7 +9,7 @@ import time
 import sys
 
 buffer_size = 4096
-forward_to = ('www.voorloopnul.com', 80)
+forward_to = ('127.0.0.1', 10000)
 
 class Forward:
     def __init__(self):
