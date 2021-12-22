@@ -32,6 +32,14 @@ class TheServer:
         self.server.listen(200)
         self.clientsock = None
 
+    def remove_server_name_from_get_request(self, request_data):
+        tmp = request_data[1].split('/')[2:]
+        request_data[1] = '/' + '/'.join(tmp)
+        request_data = ' '.join(request_data)
+        self.data = bytes(request_data, encoding="utf-8")
+        print(self.data)
+        return request_data
+
     def main_loop(self):
         self.input_list.append(self.server)
         while 1:
@@ -77,12 +85,9 @@ class TheServer:
 
         forward_to = forward_to_dict[key]
         print("forward_to: ", forward_to)
-
         forward = Forward().start(forward_to[0], forward_to[1])
 
-        tmp = request_data[1].split('/')[2:]
-        request_data[1] = '/' + '/'.join(tmp)
-        request_data = ' '.join(request_data)
+        request_data = self.remove_server_name_from_get_request(request_data)
         self.data = bytes(request_data, encoding="utf-8")
         print(self.data)
 
