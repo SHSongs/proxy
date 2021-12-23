@@ -40,6 +40,20 @@ class TheServer:
         print(self.data)
         return request_data
 
+    def verify_request(self, data):
+        if len(data) == 0:
+            return None
+
+        request_data = self.data.decode('utf-8')
+        request_data = request_data.split(' ')
+
+        request_method = request_data[0]
+        if request_method != "GET":
+            print("요청방법이 올바르지 않습니다")
+            return None
+        else:
+            return request_data
+
     def main_loop(self):
         self.input_list.append(self.server)
         while 1:
@@ -63,19 +77,11 @@ class TheServer:
         self.clientsock = clientsock
 
         self.data = clientsock.recv(buffer_size)
-        if len(self.data) == 0:
+        request_data = self.verify_request(self.data)
+
+        if request_data is None:
             self.on_close(s)
             return
-        else:
-            request_data = self.data.decode('utf-8')
-            request_data = request_data.split(' ')
-
-            request_method = request_data[0]
-            if request_method == "GET":
-                pass
-            else:
-                print("요청방법이 올바르지 않습니다")
-                return
 
         try:
             key = int(request_data[1].split('/')[1])
