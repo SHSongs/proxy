@@ -54,6 +54,12 @@ class TheServer:
         else:
             return request_data
 
+    def get_key_from_request(self, data):
+        try:
+            return int(data[1].split('/')[1])
+        except:
+            return None
+
     def main_loop(self):
         self.input_list.append(self.server)
         while 1:
@@ -83,10 +89,9 @@ class TheServer:
             self.on_close(s)
             return
 
-        try:
-            key = int(request_data[1].split('/')[1])
-        except:
-            print("잘못된 요청")
+        key = self.get_key_from_request(request_data)
+
+        if key is None:
             return
 
         forward_to = forward_to_dict[key]
