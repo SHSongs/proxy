@@ -8,6 +8,12 @@ forward_to = ('127.0.0.1', 10000)
 forward_to_dict = {8000: ('127.0.0.1', 8000), 10000: ('127.0.0.1', 10000)}
 
 
+def get_forward_sock(key):
+    forward_to = forward_to_dict[key]
+    print("forward_to: ", forward_to)
+    return Forward().start(forward_to[0], forward_to[1])
+
+
 class Forward:
     def __init__(self):
         self.forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -90,13 +96,9 @@ class TheServer:
             return
 
         key = self.get_key_from_request(request_data)
-
         if key is None:
             return
-
-        forward_to = forward_to_dict[key]
-        print("forward_to: ", forward_to)
-        forward = Forward().start(forward_to[0], forward_to[1])
+        forward = get_forward_sock(key)
 
         request_data = self.remove_server_name_from_get_request(request_data)
         self.data = bytes(request_data, encoding="utf-8")
