@@ -81,7 +81,7 @@ class TheServer:
                         self.on_close(s)
                         break
                     else:
-                        self.on_recv(s)
+                        self.on_recv(s, self.data)
 
     def on_accept(self, s):
         clientsock, clientaddr = self.server.accept()
@@ -109,7 +109,7 @@ class TheServer:
             self.input_list.append(forward)
             self.channel[clientsock] = forward
             self.channel[forward] = clientsock
-            self.on_recv(clientsock)
+            self.on_recv(clientsock, self.data)
         else:
             print("Can't establish a connection with remote server. Closing connection with client side {0}".format(
                 clientaddr))
@@ -129,8 +129,7 @@ class TheServer:
         del self.channel[out]
         del self.channel[s]
 
-    def on_recv(self, s):
-        data = self.data
+    def on_recv(self, s, data):
         # here we can parse and/or modify the data before send forward
         print(data)
 
