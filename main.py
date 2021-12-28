@@ -41,6 +41,13 @@ def verify_request(data):
         return request_data
 
 
+def get_key_from_request(data):
+    try:
+        return int(data[1].split('/')[1])
+    except:
+        return None
+
+
 class TheServer:
     input_list = []
     channel = {}
@@ -59,12 +66,6 @@ class TheServer:
         self.data = bytes(request_data, encoding="utf-8")
         print(self.data)
         return request_data
-
-    def get_key_from_request(self, data):
-        try:
-            return int(data[1].split('/')[1])
-        except:
-            return None
 
     def main_loop(self):
         self.input_list.append(self.server)
@@ -95,7 +96,7 @@ class TheServer:
             self.on_close(s)
             return
 
-        key = self.get_key_from_request(request_data)
+        key = get_key_from_request(request_data)
         if key is None:
             return
         forward = get_forward_sock(key)
