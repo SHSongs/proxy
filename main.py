@@ -1,29 +1,9 @@
 import socket
 import select
-import time
 import sys
+from forward import get_forward_sock
 
 buffer_size = 4096
-forward_to_dict = {8000: ('127.0.0.1', 8000), 10000: ('127.0.0.1', 10000)}
-
-
-def get_forward_sock(key):
-    forward_to = forward_to_dict[key]
-    print("forward_to: ", forward_to)
-    return Forward().start(forward_to[0], forward_to[1])
-
-
-class Forward:
-    def __init__(self):
-        self.forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    def start(self, host, port):
-        try:
-            self.forward.connect((host, port))
-            return self.forward
-        except Exception as inst:
-            print("[exception] - {0}".format(inst.strerror))
-            return False
 
 
 def verify_request(data):
@@ -70,7 +50,8 @@ class TheServer:
 
     def main_loop(self):
         self.input_list.append(self.server)
-        while 1:
+
+        while True:
             ss = select.select
             inputready, outputready, exceptready = ss(self.input_list, [], [])
             for s in inputready:
@@ -135,7 +116,6 @@ class TheServer:
     def on_recv(self, s, data):
         # here we can parse and/or modify the data before send forward
         print(data)
-
         self.channel[s].send(data)
 
 
