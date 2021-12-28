@@ -79,12 +79,12 @@ class TheServer:
                     break
 
                 if s != self.clientsock:
-                    self.data = s.recv(buffer_size)
-                    if len(self.data) == 0:
+                    data = s.recv(buffer_size)
+                    if len(data) == 0:
                         self.on_close(s)
                         break
                     else:
-                        self.on_recv(s, self.data)
+                        self.on_recv(s, data)
 
     def on_accept(self, s):
         clientsock, clientaddr = self.server.accept()
