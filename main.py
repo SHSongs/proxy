@@ -91,8 +91,8 @@ class TheServer:
         self.clientsock = clientsock
 
         data = clientsock.recv(buffer_size)
-        request_data = verify_request(data)
 
+        request_data = verify_request(data)
         if request_data is None:
             self.on_close(s)
             return
@@ -100,12 +100,12 @@ class TheServer:
         key = get_key_from_request(request_data)
         if key is None:
             return
-        forward = get_forward_sock(key)
 
         request_data = remove_server_name_from_get_request(request_data)
         data = bytes(request_data, encoding="utf-8")
         print(data)
 
+        forward = get_forward_sock(key)
         if forward:
             print("{0} has connected".format(clientaddr))
             self.input_list.append(clientsock)
