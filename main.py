@@ -48,6 +48,15 @@ def get_key_from_request(data):
         return None
 
 
+def remove_server_name_from_get_request(request_data):
+    tmp = request_data[1].split('/')[2:]
+    request_data[1] = '/' + '/'.join(tmp)
+    request_data = ' '.join(request_data)
+    data = bytes(request_data, encoding="utf-8")
+    print(data)
+    return request_data
+
+
 class TheServer:
     input_list = []
     channel = {}
@@ -58,14 +67,6 @@ class TheServer:
         self.server.bind((host, port))
         self.server.listen(200)
         self.clientsock = None
-
-    def remove_server_name_from_get_request(self, request_data):
-        tmp = request_data[1].split('/')[2:]
-        request_data[1] = '/' + '/'.join(tmp)
-        request_data = ' '.join(request_data)
-        self.data = bytes(request_data, encoding="utf-8")
-        print(self.data)
-        return request_data
 
     def main_loop(self):
         self.input_list.append(self.server)
@@ -89,8 +90,8 @@ class TheServer:
         clientsock, clientaddr = self.server.accept()
         self.clientsock = clientsock
 
-        self.data = clientsock.recv(buffer_size)
-        request_data = verify_request(self.data)
+        data = clientsock.recv(buffer_size)
+        request_data = verify_request(data)
 
         if request_data is None:
             self.on_close(s)
@@ -101,7 +102,7 @@ class TheServer:
             return
         forward = get_forward_sock(key)
 
-        request_data = self.remove_server_name_from_get_request(request_data)
+        request_data = remove_server_name_from_get_request(request_data)
         data = bytes(request_data, encoding="utf-8")
         print(data)
 
