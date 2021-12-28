@@ -4,7 +4,6 @@ import time
 import sys
 
 buffer_size = 4096
-forward_to = ('127.0.0.1', 10000)
 forward_to_dict = {8000: ('127.0.0.1', 8000), 10000: ('127.0.0.1', 10000)}
 
 
