@@ -102,8 +102,8 @@ class TheServer:
         forward = get_forward_sock(key)
 
         request_data = self.remove_server_name_from_get_request(request_data)
-        self.data = bytes(request_data, encoding="utf-8")
-        print(self.data)
+        data = bytes(request_data, encoding="utf-8")
+        print(data)
 
         if forward:
             print("{0} has connected".format(clientaddr))
@@ -111,7 +111,7 @@ class TheServer:
             self.input_list.append(forward)
             self.channel[clientsock] = forward
             self.channel[forward] = clientsock
-            self.on_recv(clientsock, self.data)
+            self.on_recv(clientsock, data)
         else:
             print("Can't establish a connection with remote server. Closing connection with client side {0}".format(
                 clientaddr))
