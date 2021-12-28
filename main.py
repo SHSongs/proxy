@@ -26,6 +26,21 @@ class Forward:
             return False
 
 
+def verify_request(data):
+    if len(data) == 0:
+        return None
+
+    request_data = data.decode('utf-8')
+    request_data = request_data.split(' ')
+
+    request_method = request_data[0]
+    if request_method != "GET":
+        print("요청방법이 올바르지 않습니다")
+        return None
+    else:
+        return request_data
+
+
 class TheServer:
     input_list = []
     channel = {}
@@ -44,20 +59,6 @@ class TheServer:
         self.data = bytes(request_data, encoding="utf-8")
         print(self.data)
         return request_data
-
-    def verify_request(self, data):
-        if len(data) == 0:
-            return None
-
-        request_data = self.data.decode('utf-8')
-        request_data = request_data.split(' ')
-
-        request_method = request_data[0]
-        if request_method != "GET":
-            print("요청방법이 올바르지 않습니다")
-            return None
-        else:
-            return request_data
 
     def get_key_from_request(self, data):
         try:
@@ -88,7 +89,7 @@ class TheServer:
         self.clientsock = clientsock
 
         self.data = clientsock.recv(buffer_size)
-        request_data = self.verify_request(self.data)
+        request_data = verify_request(self.data)
 
         if request_data is None:
             self.on_close(s)
