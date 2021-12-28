@@ -69,7 +69,6 @@ class TheServer:
 
     def on_accept(self, s):
         clientsock, clientaddr = self.server.accept()
-        self.client_sock_lst.append(clientsock)
 
         data = clientsock.recv(buffer_size)
 
@@ -89,6 +88,7 @@ class TheServer:
         forward = get_forward_sock(key)
         if forward:
             print("{0} has connected".format(clientaddr))
+            self.client_sock_lst.append(clientsock)
             self.input_list.append(clientsock)
             self.input_list.append(forward)
             self.channel[clientsock] = forward
