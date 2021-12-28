@@ -1,33 +1,40 @@
-# https://gist.github.com/voorloopnul/415cb75a3e4f766dc590#file-proxy-py
-
-#!/usr/bin/python
-# This is a simple port-forward / proxy, written using only the default python
-# library. If you want to make a suggestion or fix something you can contact-me
-# at voorloop_at_gmail.com
-# Distributed over IDC(I Don't Care) license
 import socket
 import select
-import time
 import sys
+from forward import get_forward_sock
 
-# Changing the buffer_size and delay, you can improve the speed and bandwidth.
-# But when buffer get to high or delay go too down, you can broke things
 buffer_size = 4096
-delay = 0.0001
-forward_to = ('127.0.0.1', 8000)
 
 
-class Forward:
-    def __init__(self):
-        self.forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def verify_request(data):
+    if len(data) == 0:
+        return None
 
-    def start(self, host, port):
-        try:
-            self.forward.connect((host, port))
-            return self.forward
-        except Exception as e:
-            print(e)
-            return False
+    request_data = data.decode('utf-8')
+    request_data = request_data.split(' ')
+
+    request_method = request_data[0]
+    if request_method != "GET":
+        print("요청방법이 올바르지 않습니다")
+        return None
+    else:
+        return request_data
+
+
+def get_key_from_request(data):
+    try:
+        return int(data[1].split('/')[1])
+    except:
+        return None
+
+
+def remove_server_name_from_get_request(request_data):
+    tmp = request_data[1].split('/')[2:]
+    request_data[1] = '/' + '/'.join(tmp)
+    request_data = ' '.join(request_data)
+    data = bytes(request_data, encoding="utf-8")
+    print(data)
+    return request_data
 
 
 class TheServer:
@@ -39,58 +46,77 @@ class TheServer:
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.bind((host, port))
         self.server.listen(200)
+        self.clientsock = None
 
     def main_loop(self):
         self.input_list.append(self.server)
-        while 1:
-            time.sleep(delay)
+
+        while True:
             ss = select.select
             inputready, outputready, exceptready = ss(self.input_list, [], [])
-            for self.s in inputready:
-                if self.s == self.server:
-                    self.on_accept()
+            for s in inputready:
+                if s == self.server:
+                    self.on_accept(s)
                     break
 
-                self.data = self.s.recv(buffer_size)
-                if len(self.data) == 0:
-                    self.on_close()
-                    break
-                else:
-                    self.on_recv()
+                if s != self.clientsock:
+                    data = s.recv(buffer_size)
+                    if len(data) == 0:
+                        self.on_close(s)
+                        break
+                    else:
+                        self.on_recv(s, data)
 
-    def on_accept(self):
-        forward = Forward().start(forward_to[0], forward_to[1])
+    def on_accept(self, s):
         clientsock, clientaddr = self.server.accept()
+        self.clientsock = clientsock
+
+        data = clientsock.recv(buffer_size)
+
+        request_data = verify_request(data)
+        if request_data is None:
+            self.on_close(s)
+            return
+
+        key = get_key_from_request(request_data)
+        if key is None:
+            return
+
+        request_data = remove_server_name_from_get_request(request_data)
+        data = bytes(request_data, encoding="utf-8")
+        print(data)
+
+        forward = get_forward_sock(key)
         if forward:
-            print(clientaddr, "has connected")
+            print("{0} has connected".format(clientaddr))
             self.input_list.append(clientsock)
             self.input_list.append(forward)
             self.channel[clientsock] = forward
             self.channel[forward] = clientsock
+            self.on_recv(clientsock, data)
         else:
-            print("Can't establish connection with remote server.", end=' ')
-            print("Closing connection with client side", clientaddr)
+            print("Can't establish a connection with remote server. Closing connection with client side {0}".format(
+                clientaddr))
             clientsock.close()
 
-    def on_close(self):
-        print(self.s.getpeername(), "has disconnected")
+    def on_close(self, s):
+        print("{0} has disconnected".format(s.getpeername()))
         # remove objects from input_list
-        self.input_list.remove(self.s)
-        self.input_list.remove(self.channel[self.s])
-        out = self.channel[self.s]
+        self.input_list.remove(s)
+        self.input_list.remove(self.channel[s])
+        out = self.channel[s]
         # close the connection with client
-        self.channel[out].close()  # equivalent to do self.s.close()
+        self.channel[out].close()
         # close the connection with remote server
-        self.channel[self.s].close()
+        self.channel[s].close()
         # delete both objects from channel dict
         del self.channel[out]
-        del self.channel[self.s]
+        del self.channel[s]
 
-    def on_recv(self):
-        data = self.data
+    def on_recv(self, s, data):
         # here we can parse and/or modify the data before send forward
         print(data)
-        self.channel[self.s].send(data)
+        self.channel[s].send(data)
 
 
 if __name__ == '__main__':
