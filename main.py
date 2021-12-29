@@ -46,7 +46,7 @@ class TheServer:
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.bind((host, port))
         self.server.listen(200)
-        self.clientsock = None
+        self.client_sock_lst = []
 
     def main_loop(self):
         self.input_list.append(self.server)
@@ -59,7 +59,7 @@ class TheServer:
                     self.on_accept(s)
                     break
 
-                if s != self.clientsock:
+                if s not in self.client_sock_lst:
                     data = s.recv(buffer_size)
                     if len(data) == 0:
                         self.on_close(s)
@@ -69,7 +69,6 @@ class TheServer:
 
     def on_accept(self, s):
         clientsock, clientaddr = self.server.accept()
-        self.clientsock = clientsock
 
         data = clientsock.recv(buffer_size)
 
@@ -89,6 +88,7 @@ class TheServer:
         forward = get_forward_sock(key)
         if forward:
             print("{0} has connected".format(clientaddr))
+            self.client_sock_lst.append(clientsock)
             self.input_list.append(clientsock)
             self.input_list.append(forward)
             self.channel[clientsock] = forward
@@ -99,8 +99,9 @@ class TheServer:
                 clientaddr))
             clientsock.close()
 
-    def on_close(self, s):
+    def on_close(self, s):  #
         print("{0} has disconnected".format(s.getpeername()))
+        self.client_sock_lst.remove(self.channel[s])
         # remove objects from input_list
         self.input_list.remove(s)
         self.input_list.remove(self.channel[s])
